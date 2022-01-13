@@ -52,18 +52,53 @@ void test_matrix() {
 
   // Test CPU multiplication
   matrix<unsigned int> * m4;
-  m4 = matmul_cpu(&m2, &m3);
-  std::cout << m4 << std::endl;
+  m4 = matmul_cpu_cache_block(&m2, &m3, 1);
+  std::cout << *m4 << std::endl;
   std::cout << "Matrix test successful" << std::endl;
 }
 
+void stress_test() {
+  matrix<unsigned int> m1(250, 250);
+  matrix<unsigned int> m2(250, 250);
+  matrix<unsigned int> * m3;
+
+  unsigned int num_trials = 10;
+  unsigned int cumulative_time = 0;
+  double avg_time = 0;
+
+  for (int i = 0; i < num_trials; i++) {
+    auto before = std::chrono::high_resolution_clock::now();
+    m3 = matmul_cpu_cache_block(&m1, &m2, 1);
+    auto after = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(after - before);
+    cumulative_time += duration.count();
+  }
+
+  avg_time = cumulative_time / num_trials;
+  std::cout << "With Cache Blocking: " << avg_time << " microseconds" << std::endl;
+  cumulative_time = 0;
+
+  for (int i = 0; i < num_trials; i++) {
+    auto before = std::chrono::high_resolution_clock::now();
+    m3 = matmul_cpu(&m1, &m2);
+    auto after = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(after - before);
+    cumulative_time += duration.count();
+  }
+
+  avg_time = cumulative_time / num_trials;
+  std::cout << "Without Cache Blocking: " << avg_time << " microseconds" << std::endl;
+}
+
 int main(int argc, char ** argv) {
-    test_matrix();
-    en_sse = sse_enabled();
-    en_avx = avx_enabled();
-    en_avx2 = avx2_enabled();
-    std::cout << "SSE:  " << en_sse  << std::endl;
-    std::cout << "AVX:  " << en_avx << std::endl;
-    std::cout << "AVX2: " << en_avx2 << std::endl;
+    // test_matrix();
+    // en_sse = sse_enabled();
+    // en_avx = avx_enabled();
+    // en_avx2 = avx2_enabled();
+    // std::cout << "SSE:  " << en_sse  << std::endl;
+    // std::cout << "AVX:  " << en_avx << std::endl;
+    // std::cout << "AVX2: " << en_avx2 << std::endl;
+
+    stress_test();
 
 }
