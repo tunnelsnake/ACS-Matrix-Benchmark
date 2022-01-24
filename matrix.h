@@ -5,6 +5,8 @@
 #include <cassert>
 #include <type_traits>
 #include <iostream>
+#include <cmath>
+#include <x86intrin.h>
 
 template <class T>
 class matrix {
@@ -27,6 +29,17 @@ class matrix {
 
     template <class K>
     friend matrix<K> * matmul_cpu_cache_block(matrix<K> * m1, matrix<K> * m2, size_t block_size);
+    template <class K>
+    friend matrix<K> * matmul_cpu(matrix<K> * m1, matrix<K> * m2);
+    friend matrix<float> * matmul_cpu_sse(matrix<float> * m1, matrix<float> * m2);
+    friend matrix<double> * matmul_cpu_sse(matrix<double> * m1, matrix<double> * m2);
+    friend matrix<uint32_t> * matmul_cpu_sse(matrix<uint32_t> * m1, matrix<uint32_t> * m2);
+    friend matrix<uint16_t> * matmul_cpu_sse(matrix<uint16_t> * m1, matrix<uint16_t> * m2);
+    
+
+    friend matrix<float> * matmul_cpu_avx(matrix<float> * m1, matrix<float> * m2);
+    friend matrix<float> * matmul_cpu_avxfma(matrix<float> * m1, matrix<float> * m2);
+
 
   private:
     std::vector<T> * _internal_getRow(unsigned int row);
@@ -53,7 +66,10 @@ matrix<T>::matrix(unsigned int nRows, unsigned int nCols) {
 
 template <class T>
 matrix<T>::~matrix() {
-
+  // this->_elements->resize(0);
+  // this->_elements_col_maj->resize(0);
+  delete this->_elements;
+  delete this->_elements_col_maj;
 }
 
 template <class T>
@@ -142,20 +158,10 @@ void matrix<T>::fill_zeroes() {
 
 template <class T>
 void matrix<T>::transpose() {
-//   std::vector<std::vector<T>> t;
-//     t.resize(this->cols);
-//   for (int i = 0; i < this->cols; i++) t[i].resize(this->rows);
-//   for (int i = 0; i < this->rows; i++) {
-//     for (int j = 0; j < this->cols; j++) {
-//       t[j][i] = this->get(i, j);
-//     }
-//   }
-_transpose(this->_elements_col_maj, this->_elements);
-
+  _transpose(this->_elements_col_maj, this->_elements);
   unsigned int tmpCols = this->cols;
   this->cols = this->rows;
   this->rows = tmpCols;
-
   const auto tmpElem = this->_elements;
   this->_elements = _elements_col_maj;
   this->_elements_col_maj = tmpElem;
@@ -177,6 +183,9 @@ std::ostream& operator<<(std::ostream& os, const matrix<T>& m1) {
 
 // Multiply two matrices using only manual multiply accumulate
 // No HW extensions or optimizations are used
+// Tell GCC not to optimize this one because it is the control group
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
 template <class T>
 matrix<T> * matmul_cpu(matrix<T> * m1, matrix<T> * m2) {
   long long int acc;
@@ -184,7 +193,7 @@ matrix<T> * matmul_cpu(matrix<T> * m1, matrix<T> * m2) {
   // Make sure that matrices match 1's cols to 2's rows
   assert(m1->cols == m2->rows);
   
-  // An MxN * NxP yields an NxP matrix
+  // An MxN * NxP yields an MxP matrix
   const auto res = new matrix<T>(m1->rows, m2->cols);
   for (int i = 0; i < m1->rows; i++) {
     for (int j = 0; j < m2->cols; j++) {
@@ -196,13 +205,15 @@ matrix<T> * matmul_cpu(matrix<T> * m1, matrix<T> * m2) {
 
       // do the dot product of m1 row with m2 column
       for (int k = 0; k < m1->cols; k++) {
-        acc += m1->get(i, k) * m2->get(j, k);
+        acc += m1->_elements->at(i)[k] * m2->_elements->at(j)[k];
       }
       res->set(i, j, acc);
+      // res->_elements->at(i)[j] = acc;
     }
   }
   return res;
 }
+#pragma GCC pop_options
 
 // Multiply two matrices using only manual multiply accumulate
 // cache optimization is used in this algorithm.  A copy of
@@ -217,23 +228,33 @@ matrix<T> * matmul_cpu_cache_block(matrix<T> * m1, matrix<T> * m2, size_t block_
 
   // TODO: Make this work for all block sizes
   // Make sure that the block size evenly divides the shared dimension
-  assert(m1->cols % block_size == 0);
+  // assert(m1->cols % block_size == 0);
   long long int acc = 0;
 
-  // Force the second matrix to generate column major data
-  // m2->_internal_populate_col_maj();
+  // Store the original dimensions of the matrix
+  unsigned int m1_rows = m1->rows;
+  unsigned int m2_rows = m2->rows;
+  unsigned int m1_cols = m1->cols;
+  unsigned int m2_cols = m2->cols;
 
-  // An MxN * NxP yields an NxP matrix
+  // An MxN * NxP yields an MxP matrix
   const auto res = new matrix<T>(m1->rows, m2->cols);
+
   for (int row = 0; row < m1->rows; row += block_size) {
     for (int col = 0; col < m2->cols; col += block_size) {
+
+      // To make this work for any sizes, not just multiples of the block size,
+      // We incur a slight penalty to calculate whether or not we are about to 
+      // have an invalid access or not.
+      int row_block_size = (m1->rows - row) >= block_size ? block_size : m1->rows - row;
+      int col_block_size = (m2->cols - col) >= block_size ? block_size : m2->cols - col;
 
       // This might at first seem not efficient but the gained efficiency comes
       // From the fact that we are better utilizing cache lines since we have
       // both row major and column major copies of the data.
       // In m1, we only use row major data. In m2, we only use column major data.
-      for (int rowBlockIndex = 0; rowBlockIndex < block_size; rowBlockIndex++) {
-        for (int colBlockIndex = 0; colBlockIndex < block_size; colBlockIndex++) {
+      for (int rowBlockIndex = 0; rowBlockIndex < row_block_size; rowBlockIndex++) {
+        for (int colBlockIndex = 0; colBlockIndex < col_block_size; colBlockIndex++) {
 
           // do the dot product of m1 row with m2 column
           for (int k = 0; k < m1->cols; k++) {
@@ -247,7 +268,5 @@ matrix<T> * matmul_cpu_cache_block(matrix<T> * m1, matrix<T> * m2, size_t block_
   }
   return res;
 }
-
-
 
 #endif //MATRIX_H

@@ -1,2 +1,4 @@
 .vscode/*
 *.o*
+float_data.txt
+fixed_data.txt
