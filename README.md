@@ -5,39 +5,26 @@ A repository for a project that seeks to improve cache oblivious and cpu extensi
 ## Goal:
 Demonstrate visually the drastic speed-ups in performance that hardware acceleration can bring to computing problems.
 
-## Results:
+##  Results:
 ### Unoptimized:
 <p align="center">
   <img src="./res/performance_fixed_unoptimized.png" width="450" />
   <img src="./res/performance_float_unoptimized.png" width="450" /> 
-  <img src="./res/10k_unoptimized_table.png" width="450" /> 
-  <div style="width:200px">
-    <table>
-        <thead>
-            <tr>
-                <th>f|oo</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>b <code>|</code> az</td>
-            </tr>
-            <tr>
-                <td>b <strong>|</strong> im</td>
-            </tr>
-        </tbody>
-    </table>
-  </div>
-
 </p>
+
+#### 10k x 10k:
+<img src="./res/10k_unoptimized_table.png" width="600" /> 
 
 ### Optimized:
 <p align="center">
   <img src="./res/performance_fixed_optimized.png" width="450" />
   <img src="./res/performance_float_optimized.png" width="450" />
-  <img src="./res/10k_optimized_table.png" width="450" /> 
-
 </p>
+
+#### 10k x 10k:
+<img src="./res/10k_optimized_table.png" width="600" /> 
+
+
 It is very clear that making use of Single Instruction Multiple Data (SIMD) instructions is crucial to attaining maximum performance in matrix multiplication.  Depending on the data type, one can get up to 8x the throughput by using AVX or SSE.
 
 
