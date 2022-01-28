@@ -60,9 +60,9 @@ void test_matrix() {
 }
 
 void large_matrix_test_float() {
-    int large_matrix_size = 10000;
-    matrix<float> m1(10000, 10000);
-    matrix<float> m2(10000, 10000);
+    int large_matrix_size = 1000;
+    matrix<float> m1(large_matrix_size, large_matrix_size);
+    matrix<float> m2(large_matrix_size, large_matrix_size);
     std::cout << "Starting Large Floating Point Matrix Test. Size: " << large_matrix_size << " x " << large_matrix_size << std::endl;
     std::cout << "Testing SSE, AVX, and AVX2" << std::endl;
 
@@ -70,46 +70,46 @@ void large_matrix_test_float() {
     auto m3 = matmul_cpu_sse(&m1, &m2);
     auto after = std::chrono::high_resolution_clock::now();
     delete m3;
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(after - before);
-    std::cout << "SSE: " << duration.count() << std::endl;
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(after - before);
+    std::cout << "SSE: " << duration.count() << " milliseconds" << std::endl;
 
     before = std::chrono::high_resolution_clock::now();
     m3 = matmul_cpu_avx(&m1, &m2);
     after = std::chrono::high_resolution_clock::now();
     delete m3;
-    duration = std::chrono::duration_cast<std::chrono::seconds>(after - before);
-    std::cout << "AVX: " << duration.count() << std::endl;
+    duration = std::chrono::duration_cast<std::chrono::milliseconds>(after - before);
+    std::cout << "AVX: " << duration.count() << " milliseconds" << std::endl;
 
     before = std::chrono::high_resolution_clock::now();
     m3 = matmul_cpu_avxfma(&m1, &m2);
     after = std::chrono::high_resolution_clock::now();
     delete m3;
-    duration = std::chrono::duration_cast<std::chrono::seconds>(after - before);
-    std::cout << "AVX FMA: " << duration.count() << std::endl;
+    duration = std::chrono::duration_cast<std::chrono::milliseconds>(after - before);
+    std::cout << "AVX FMA: " << duration.count() << " milliseconds" << std::endl;
 }
 
 void large_matrix_test_fixed() {
-    int large_matrix_size = 10000;
-    matrix<uint32_t> m1(10000, 10000);
-    matrix<uint32_t> m2(10000, 10000);
+    int large_matrix_size = 1000;
+    matrix<uint32_t> m1(large_matrix_size, large_matrix_size);
+    matrix<uint32_t> m2(large_matrix_size, large_matrix_size);
     std::cout << "Starting Large Fixed Point Matrix Test. Size: " << large_matrix_size << " x " << large_matrix_size << std::endl;
     std::cout << "Testing SSE (16 Bit), SSE (32 Bit)" << std::endl;
 
     auto before = std::chrono::high_resolution_clock::now();
     auto m3 = matmul_cpu_sse(&m1, &m2);
     auto after = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(after - before);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(after - before);
     delete m3;
-    std::cout << "SSE (32 Bit): " << duration.count() << std::endl;
+    std::cout << "SSE (32 Bit): " << duration.count() << " milliseconds" << std::endl;
 
-    matrix<uint16_t> m4(10000, 10000);
-    matrix<uint16_t> m5(10000, 10000);
+    matrix<uint16_t> m4(large_matrix_size, large_matrix_size);
+    matrix<uint16_t> m5(large_matrix_size, large_matrix_size);
     before = std::chrono::high_resolution_clock::now();
     auto m6 = matmul_cpu_sse(&m4, &m5);
     after = std::chrono::high_resolution_clock::now();
-    duration = std::chrono::duration_cast<std::chrono::seconds>(after - before);
+    duration = std::chrono::duration_cast<std::chrono::milliseconds>(after - before);
     delete m6;
-    std::cout << "SSE (16 Bit): " << duration.count() << std::endl;
+    std::cout << "SSE (16 Bit): " << duration.count() << " milliseconds" << std::endl;
 
 }
 
