@@ -10,7 +10,6 @@ int en_sse = 0;
 int en_avx = 0;
 int en_avx2 = 0;
 
-
 void test_matrix() {  
   matrix<unsigned int> m1(10, 10);
 
@@ -323,7 +322,6 @@ int main(int argc, char ** argv) {
 
     large_matrix_test_float();
     large_matrix_test_fixed();
-    // floating_point_stress_test();
-    // fixed_point_stress_test();
-
+    floating_point_stress_test();
+    fixed_point_stress_test();
 }

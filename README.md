@@ -67,9 +67,9 @@ Download GCC/G++ for your platform (if on WSL/Ubuntu/Debian:  ```sudo apt-get in
 
 Enter the repository's directory with your terminal:  ```cd path/to/repository```
 
-Run ```make``` to build the test executable
+Run ```g++ matrix.cpp main.cpp -mavx -msse -mavx2 -mfma -g -o matrix.out``` to build the test executable
 
-Run ```./matmul``` to run the test executable
+Run ```./matrix.out``` to run the test executable
 
 
 
